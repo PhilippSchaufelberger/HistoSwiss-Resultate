@@ -42,7 +42,7 @@
     });
 
     // Dein kleineres GeoJSON (URL anpassen!)
-    const geojsonUrl = 'https://cdn.jsdelivr.net/gh/PhilippSchaufelberger/HistoSwiss-Resultate-2026-06/histoswiss_pois.geojson';
+    const geojsonUrl = 'https://philippschaufelberger.github.io/HistoSwiss-Resultate-2026-06/histoswiss_pois.geojson';
 
     fetch(geojsonUrl)
         .then(response => response.json())
