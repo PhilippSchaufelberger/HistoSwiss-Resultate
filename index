@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>HistoSwiss – Optimierte Karte</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    <style>
+        #map { height: 100vh; margin: 0; }
+        #ladebalken {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-family: sans-serif;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="ladebalken">Lade Daten ...</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+    const map = L.map('map').setView([46.8182, 8.2275], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // MarkerCluster Gruppe
+    const markers = L.markerClusterGroup({
+        chunkedLoading: true,   // Lädt Marker in Blöcken
+        maxClusterRadius: 80    // Cluster-Radius in Pixeln
+    });
+
+    // Dein kleineres GeoJSON (URL anpassen!)
+    const geojsonUrl = 'https://cdn.jsdelivr.net/gh/PhilippSchaufelberger/HistoSwiss-Resultate-2026-06/histoswiss_pois.geojson';
+
+    fetch(geojsonUrl)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('ladebalken').innerText = `${data.features.length} Punkte werden geladen ...`;
+            // Alle Punkte zum Cluster hinzufügen
+            L.geoJSON(data, {
+                pointToLayer: function(feature, latlng) {
+                    return L.marker(latlng);
+                },
+                onEachFeature: (feature, layer) => {
+                    const p = feature.properties;
+                    let popup = `<b>${p.name || 'POI'}</b>`;
+                    if(p.distanz_kfr) popup += `<br>📏 Distanz: ${p.distanz_kfr}`;
+                    if(p.image_url) popup += `<br><img src="${p.image_url}" width="200">`;
+                    if(p.target_url) popup += `<br><a href="${p.target_url}" target="_blank">🔗 Quelle</a>`;
+                    layer.bindPopup(popup);
+                }
+            }).eachLayer(layer => markers.addLayer(layer));
+            
+            map.addLayer(markers);
+            map.fitBounds(markers.getBounds());
+            document.getElementById('ladebalken').innerHTML = '✅ Fertig! ' + data.features.length + ' Points geladen.';
+            setTimeout(() => { document.getElementById('ladebalken').style.opacity = '0'; }, 3000);
+        })
+        .catch(error => {
+            console.error(error);
+            document.getElementById('ladebalken').innerHTML = '❌ Fehler: ' + error.message;
+        });
+</script>
+</body>
+</html>
